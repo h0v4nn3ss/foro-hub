@@ -1,0 +1,24 @@
+### Login - obtener JWT
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "login": "andres",
+  "clave": "mysql"
+}
+
+### Listar topicos (reemplazar {{token}})
+GET http://localhost:8080/topicos?page=0&size=10
+Authorization: Bearer {{token}}
+
+### Crear topico (reemplazar {{token}})
+POST http://localhost:8080/topicos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "titulo": "Nuevo topico JWT",
+  "mensaje": "Creado con token JWT",
+  "autor": "Andres",
+  "curso": "Spring Boot"
+}

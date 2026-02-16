@@ -9,6 +9,8 @@ API REST construida con Java 17 + Spring Boot para gestión de tópicos de un fo
 - Spring Web
 - Spring Data JPA
 - Spring Security
+- JWT (Auth0 Java JWT)
+- Swagger/OpenAPI (springdoc)
 - Bean Validation
 - Flyway Migration
 - MySQL
@@ -25,6 +27,8 @@ API REST construida con Java 17 + Spring Boot para gestión de tópicos de un fo
 - Validación de campos obligatorios
 - Regla de no duplicar tópico (`titulo + mensaje`)
 - Migraciones automáticas de base de datos con Flyway
+- Autenticación de usuarios con Spring Security
+- Control de acceso con JWT Bearer en todos los endpoints protegidos
 
 ## Modelo de tópico
 
@@ -102,14 +106,108 @@ Respuesta esperada: `200 OK`, `404 Not Found` o `409 Conflict` (duplicado).
 
 Respuesta esperada: `204 No Content` o `404 Not Found`.
 
+### Login
+
+`POST /login`
+
+Body JSON:
+
+```json
+{
+  "login": "andres",
+  "clave": "mysql"
+}
+```
+
+Respuesta esperada: `200 OK` o `401 Unauthorized`.
+
+Respuesta ejemplo:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+## Seguridad
+
+- `POST /login` está público.
+- El resto de endpoints requiere usuario autenticado.
+- La API usa token JWT Bearer.
+- Usuario inicial de prueba creado por migración Flyway:
+  - `login`: `andres`
+  - `clave`: `mysql`
+- Tabla de autenticación: `usuarios` (migración `V3__create_table_usuarios.sql`)
+
+Para consumir endpoints protegidos:
+
+```http
+Authorization: Bearer <token>
+```
+
+Comportamiento de acceso:
+
+- token ausente o inválido: `401 Unauthorized`
+- token válido: acceso permitido según endpoint
+
+## Pruebas rápidas
+
+Archivo JSON de login:
+
+- `requests/login.json`
+
+Archivo HTTP de ejemplo (VS Code REST Client / IntelliJ HTTP Client):
+
+- `requests/foro-hub.http`
+
+Con `curl`:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d @requests/login.json | sed -E 's/.*"token":"([^"]+)".*/\1/')
+
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/topicos?page=0&size=10"
+```
+
+Para crear un tópico con token:
+
+```bash
+curl -X POST http://localhost:8080/topicos \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"titulo":"Topico JWT","mensaje":"Prueba","autor":"Andres","curso":"Spring Boot"}'
+```
+
 ## Configuración local
 
-`src/main/resources/application.properties`:
+Variables de entorno requeridas (información sensible fuera del código):
 
-```properties
-spring.datasource.url=jdbc:mysql://127.0.0.1:3306/foro_hub
-spring.datasource.username=andres
-spring.datasource.password=mysql
+```bash
+DB_URL=jdbc:mysql://127.0.0.1:3306/foro_hub
+DB_USER=andres
+DB_PASSWORD=<tu_password>
+JWT_SECRET=<tu_secret_largo_y_aleatorio>
+JWT_EXPIRATION=7200000
+```
+
+Puedes usar el archivo de ejemplo:
+
+- `.env.example`
+
+Recomendado:
+
+1. Copiar `.env.example` a `.env`
+2. Reemplazar valores sensibles en `.env`
+3. Cargar variables antes de ejecutar la app
+
+Ejemplo de carga en bash/zsh:
+
+```bash
+set -a
+source .env
+set +a
 ```
 
 Crear BD local:
@@ -124,11 +222,22 @@ CREATE DATABASE foro_hub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ./mvnw spring-boot:run
 ```
 
-## Nota de seguridad (temporal)
+Archivo de configuración: `src/main/java/com/forohub/config/SecurityConfiguration.java`
 
-Actualmente la configuración de seguridad está abierta para facilitar el avance del curso:
+Guía de ejecución persistente:
 
-- solicitudes permitidas sin autenticación
-- CSRF desactivado
+- `docs/COMO_EJECUTAR.md`
 
-Archivo: `src/main/java/com/forohub/config/SecurityConfiguration.java`
+## Documentación API (Swagger)
+
+Con la app en ejecución:
+
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+
+Para probar endpoints protegidos en Swagger:
+
+1. Ejecuta `POST /login` y copia el `token`.
+2. Click en `Authorize` en Swagger UI.
+3. Pega: `Bearer <token>`.
+4. Ejecuta los endpoints de tópicos desde la UI.
