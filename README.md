@@ -114,8 +114,8 @@ Body JSON:
 
 ```json
 {
-  "login": "andres",
-  "clave": "mysql"
+  "login": "<tu_usuario>",
+  "clave": "<tu_clave>"
 }
 ```
 
@@ -135,8 +135,8 @@ Respuesta ejemplo:
 - El resto de endpoints requiere usuario autenticado.
 - La API usa token JWT Bearer.
 - Usuario inicial de prueba creado por migración Flyway:
-  - `login`: `andres`
-  - `clave`: `mysql`
+  - `login`: `<usuario_configurado>`
+  - `clave`: `<clave_configurada>`
 - Tabla de autenticación: `usuarios` (migración `V3__create_table_usuarios.sql`)
 
 Para consumir endpoints protegidos:
@@ -186,7 +186,7 @@ Variables de entorno requeridas (información sensible fuera del código):
 
 ```bash
 DB_URL=jdbc:mysql://127.0.0.1:3306/foro_hub
-DB_USER=andres
+DB_USER=<tu_usuario_db>
 DB_PASSWORD=<tu_password>
 JWT_SECRET=<tu_secret_largo_y_aleatorio>
 JWT_EXPIRATION=7200000
